@@ -1,0 +1,85 @@
+//package com.agilysys.pos.rules.validation
+ 
+import java.util.ArrayList;
+import java.math.BigDecimal;
+
+import com.agilysys.pos.domainobjects.*;
+
+rule "Has No Items"
+    when
+     	// checks for a modifier tag on an item 
+        $o : Order( $o.getItems().isEmpty() )
+    then
+        System.out.println( "Order has no items" );
+end
+
+rule "Has Items"
+	when
+		$o : Order( !$o.getItems().isEmpty() )
+	then
+		// insert child items for processing
+		for (Item itm : $o.getItems()) {
+			insert(itm);
+		}
+end
+
+rule "XOR modifier with more than one item selected"
+    when
+     	// checks for a modifier tag on an item 
+        $i : Item( $tags : tags, $items: getItems() )
+        $t : Tag( name == "Modifier" ) from $tags
+        $selectedItems: ArrayList ( size > 1 )
+        				from collect( Item( selected == true ) 
+        							  from $items
+        							)
+        
+    then
+    	//TODO: terminate rules processing and return an error?
+        System.out.println( "XOR modifier has more than one item selected" );
+end
+
+rule "XOR modifier with no items selected"
+    when
+     	// checks for a modifier tag on an item 
+        Item( $tags : tags , $items: getItems() , $name: getName() )
+        Tag( name == "Modifier" ) from $tags
+        $selectedItems: ArrayList ( size < 1 )
+        				from collect( Item( selected == true ) 
+        							  from $items
+        							)
+        
+    then
+    	//TODO: terminate rules processing and return an error?
+        System.out.println( "XOR modifier has no items selected"  + $name );
+end
+
+rule "Has Nested Items"
+	when
+		$i : Item( !$i.getItems().isEmpty(), myMessage : "nested items found" )
+	then
+		// causes rules to fire recursively for nested items
+        for (Item itm : $i.getItems()) {
+        	insert(itm);
+        } 
+        System.out.println( myMessage );
+end
+
+// this rule has side-effects, it creates a new line item record for each check on the order, 
+// with the appropriate percentage. Insert is done without the "modify" statement, since that 
+// causes a fact update resulting in infinite recursion of the rule...
+rule "Apportion item to check line items"
+	when 
+		$o : Order( $checks : getChecks(), $checks.size() > 0 )
+		$i : Item( $o.getItems() contains $i )
+	then
+		for (Check chk : (ArrayList<Check>) $checks) {
+			LineItem lItm = new LineItem($i.getId(), 1.0 / $checks.size() );
+			chk.addLineItem(lItm);
+		}
+		//modify ($o) {
+		//	setChecks($checks);
+		//}
+		
+		System.out.println( "Item apportioned to check line items" );
+end
+

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule">
+    <kbase name="rules" packages="com.agilysys.pos.rules.validation"> <!--   packages="com.agilysys.pos.rules.validation"-->
+        <ksession name="validation-rules"/>
+    </kbase>
+    <kbase name="checkrules" packages="com.agilysys.pos.rules.check">  <!-- packages="com.agilysys.pos.rules.check" -->
+    	<ksession name="check-rules"/>
+    </kbase>
+</kmodule>

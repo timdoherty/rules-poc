@@ -1,0 +1,24 @@
+package com.agilysys.pos.rules.check
+
+import java.util.ArrayList;
+ 
+import com.agilysys.pos.domainobjects.Order;
+import com.agilysys.pos.domainobjects.Item;
+import com.agilysys.pos.domainobjects.Check;
+import com.agilysys.pos.domainobjects.LineItem;
+
+// this rule has side-effects, it creates a new line item record for each check on the order, 
+// with the appropriate percentage. Insert is done without the "modify" statement, which  
+// causes a fact update resulting in infinite recursion of the rule...
+rule "Apportion item to check line items"
+	when 
+		$o : Order( $checks : getChecks(), $checks.size() > 0 )
+		$i : Item( $o.getItems() contains $i )
+	then
+		for (Check chk : (ArrayList<Check>) $checks) {
+			LineItem lItm = new LineItem($i.getId(), 1.0 / $checks.size() );
+			chk.addLineItem(lItm);
+		}
+		
+		System.out.println( "Item apportioned to check line items" );
+end
